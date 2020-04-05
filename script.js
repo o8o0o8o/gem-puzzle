@@ -48,6 +48,9 @@ function renderBoard(num) {
       if (e.target.className.includes("move")) {
         let zero = document.getElementById("0");
         let el = e.target;
+        if (el.tagName == 'SPAN') {
+         el = el.parentElement;
+        }
         let empty = document.createElement("div");
         let parentEl = el.parentElement;
         let parentZero = zero.parentElement;
@@ -83,18 +86,23 @@ function renderBoard(num) {
       if (rows[i][j].id == 0) {
         if (rows[i][j - 1] !== undefined) {
           rows[i][j - 1].classList.toggle("move");
+          console.log( rows[i][j - 1].children[0])
+          rows[i][j - 1].children[0].classList.toggle('move');
         }
         if (rows[i][j + 1] !== undefined) {
           rows[i][j + 1].classList.toggle("move");
+          rows[i][j + 1].children[0].classList.toggle('move');
         }
         if (i !== 0) {
           if (rows[i - 1][j] !== undefined) {
             rows[i - 1][j].classList.toggle("move");
+            rows[i - 1][j].children[0].classList.toggle('move');
           }
         }
         if (i !== rows.length - 1) {
           if (rows[i + 1][j] !== undefined) {
             rows[i + 1][j].classList.toggle("move");
+            rows[i + 1][j].children[0].classList.toggle('move');
           }
         }
       }
