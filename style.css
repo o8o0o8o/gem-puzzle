@@ -1,32 +1,48 @@
-.main {
-  margin-left: auto;
-margin-right: auto;
-}
-
-.box {
-  width: 50px;
-  height: 50px;
-  background-color: black;
-  border-radius: 4px;
-  box-shadow: black 2px 2px 5px;
-}
-
-.central {
-  position: relative;
-  top: 10px;
-  left: 9px;
-  color: aliceblue;
-  font-size: 24px;
-  cursor: default;
+.button {
+height: 40px ;
+border-radius: 4px;
+margin-left: 20px;
+margin-right: 20px;
 }
 
 .row {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  height: 54px;
-  width: 215px;
+  height: 74px;
+  width: 315px;
+  margin-left: auto;
+  margin-right: auto;
 }
+
+.box {
+  width: 70px;
+  height: 70px;
+  background-color: black;
+  border-radius: 4px;
+  box-shadow: black 2px 2px 5px;
+}
+
+.main {
+  margin-top: 10%;
+}
+
+a {
+  color: blue;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.central {
+  position: relative;
+  top: 11px;
+  left: 10px;
+  color: aliceblue;
+  font-size: 24px;
+  cursor: default;
+}
+
+
 
 .highlight {
   background-color: brown;
