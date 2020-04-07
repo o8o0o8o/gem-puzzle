@@ -10,33 +10,34 @@ function getAndSetTime(reset, save) {
     time = localStorage.getItem("time");
   }
   if (typeof save !== "undefined") {
-    console.log(save)
     localStorage.setItem("time", save);
     time = localStorage.getItem("time");
+    console.log(time);
   }
   return time;
 }
 
 function bestResults(name) {
-  if (typeof name === 'string') {
+  if (typeof name === "string") {
     let fromBase = [];
-    if (localStorage.getItem("results") !== undefined) {
-      fromBase = JSON.parse(localStorage.getItem("results"));
-      fromBase.push({moves: movesCounter(), name});
+    fromBase.push({ moves: movesCounter(), name });
+    if (localStorage.getItem("results") !== null) {
+      JSON.parse(localStorage.getItem("results")).map((a) => fromBase.push(a));
       fromBase.map((a, b) => {
         if (a.moves > b.moves) {
           return 1;
         }
         if (a.moves < b.moves) {
-          return - 1;
+          return -1;
         }
       });
-      fromBase.length = 10;
-    } else {
-      localStorage.setItem("results", JSON.stringify({moves: movesCounter(), name}));
+      if (fromBase.length > 10) {
+        fromBase.length = 10;
+      }
     }
+    localStorage.setItem("results", JSON.stringify(fromBase));
   }
-  return localStorage.getItem("results");
+  return JSON.parse(localStorage.getItem("results"));
 }
 
 function playPause(toggle) {
@@ -60,7 +61,7 @@ function playPause(toggle) {
   return state;
 }
 
-function saveRestore (toggle) {
+function saveRestore(toggle) {
   let gotSome = localStorage.getItem("gotSome");
   switch (gotSome) {
     case "false":
@@ -82,21 +83,23 @@ function saveRestore (toggle) {
 }
 
 function saveDimenson(dim) {
-  if (typeof dim === 'number') {
+  if (typeof dim === "number") {
     localStorage.setItem("dimension", dim);
   }
   return localStorage.getItem("dimension");
 }
 
 function saveTime(time) {
-  if (typeof time === 'number') {
+  if (typeof time === "number") {
     localStorage.setItem("savedTime", time);
   }
-  return localStorage.getItem("savedTime");
+  return localStorage.getItem("savedTime")
+    ? localStorage.getItem("savedTime")
+    : 0;
 }
 
 function saveMoves(moves) {
-  if (typeof moves === 'number') {
+  if (typeof moves === "number") {
     localStorage.setItem("movesBeenMade", moves);
   }
   return localStorage.getItem("movesBeenMade");
@@ -107,20 +110,20 @@ function readAndSaveResults(save, dimension, timePassed, movesBeenMade) {
   if (Array.isArray(save)) {
     localStorage.setItem("savedGame", JSON.stringify(save));
     saveDimenson(dimension);
-    saveTime(timePassed)
+    saveTime(timePassed);
     saveMoves(movesBeenMade);
   }
   let dim = saveDimenson();
   savedGame = localStorage.getItem("savedGame");
   let time = saveTime();
   let moves = saveMoves();
-  return {savedGame, time, dim, moves};
+  return { savedGame, time, dim, moves };
 }
 
 function showTime() {
+  let timeStart = +getAndSetTime();
   if (playPause()) {
     let now = Date.now();
-    let timeStart = +getAndSetTime();
     let s = Math.round((now - timeStart) / 1000);
     let m = Math.floor(s / 60);
     s = s % 60;
@@ -144,7 +147,7 @@ function movesCounter(plusOne, reset, setMoves) {
     moves += 1;
     localStorage.setItem("moves", `${moves}`);
   }
-  if (typeof setMoves === 'number') {
+  if (typeof setMoves === "number") {
     localStorage.setItem("moves", setMoves);
     moves = +localStorage.getItem("moves");
   }
@@ -154,17 +157,23 @@ function movesCounter(plusOne, reset, setMoves) {
 function animate(id) {
   setTimeout(() => {
     const key = document.getElementById(id);
-    key.classList.add('animation');
+    key.classList.add("animation");
   }, 0);
   setTimeout(() => {
     const key = document.getElementById(id);
-    key.classList.remove('animation');
+    key.classList.remove("animation");
   }, 100);
 }
 
 function renderBoard(num, dim, end) {
   if (end) {
-    let playerName = prompt('Как тебя зовут?', 'Неизвестный');
+    alert(
+      `Ура! Вы решили головоломку за ${
+        document.getElementById("timeLbl").innerText
+      } и ${movesCounter()} ходов`
+    );
+    let playerName = prompt("Как тебя зовут?", "Неизвестный");
+    bestResults(playerName);
   }
   let n = 16;
   if (typeof dim === "number") {
@@ -212,9 +221,8 @@ function renderBoard(num, dim, end) {
   buttonBar.classList.add("row");
   buttonBar.classList.add("labels");
   let newGameBt = document.createElement("button");
-  newGameBt.id = "newGameBt";
   newGameBt.classList.add("button");
-  newGameBt.innerText = "New Game";
+  newGameBt.innerText = "Новая игра";
   newGameBt.onmousedown = function newGame() {
     renderBoard(false, Math.sqrt(n));
     getAndSetTime(true);
@@ -225,79 +233,87 @@ function renderBoard(num, dim, end) {
   };
   buttonBar.appendChild(newGameBt);
   let stopBt = document.createElement("button");
-  stopBt.id = "stopBt";
   stopBt.classList.add("button");
   stopBt.onmousedown = function stop() {
     if (playPause()) {
       let temp = Date.now() - getAndSetTime();
       getAndSetTime(false, temp);
       playPause(true);
-      stopBt.innerText = "Resume";
+      stopBt.innerText = "Продолжить";
     } else {
       playPause(true);
-      stopBt.innerText = "Stop";
+      stopBt.innerText = "Стоп";
       let temp = Date.now() - getAndSetTime();
       getAndSetTime(false, temp);
     }
   };
-  stopBt.innerText = "Stop";
+  stopBt.innerText = "Стоп";
   buttonBar.appendChild(stopBt);
   let saveBt = document.createElement("button");
-  saveBt.id = "saveBt";
   saveBt.classList.add("button");
   saveBt.onmousedown = function save() {
-    if (saveRestore()) {
+    if (!saveRestore()) {
       getAndSetTime();
-      readAndSaveResults(numbers, Math.sqrt(n), (+Date.now() - +getAndSetTime()), movesCounter());
+      let temp = Date.now() - getAndSetTime();
+      readAndSaveResults(numbers, Math.sqrt(n), temp, movesCounter());
       saveRestore(true);
-      saveBt.innerText = "Continue";
+      saveBt.innerText = "Прошлая игра";
     } else {
       saveRestore(true);
-      console.log(+readAndSaveResults().time)
-      getAndSetTime(false, +readAndSaveResults().time);
-
+      console.log(+readAndSaveResults().time);
+      getAndSetTime(false);
       movesCounter(false, false, +readAndSaveResults().moves);
-      renderBoard(JSON.parse(readAndSaveResults().savedGame), +readAndSaveResults().dim);
-      saveBt.innerText ="Save Results";
+      renderBoard(
+        JSON.parse(readAndSaveResults().savedGame),
+        +readAndSaveResults().dim
+      );
+      saveBt.innerText = "Сохранить игру";
     }
   };
-  saveBt.innerText = saveRestore() ? "Save Results" : "Continue";
+  saveBt.innerText = !saveRestore() ? "Сохранить игру" : "Прошлая игра";
   buttonBar.appendChild(saveBt);
   let resultsBt = document.createElement("button");
-  resultsBt.id = "resultsBt";
   resultsBt.classList.add("button");
-  resultsBt.innerText = "Show Results";
+  resultsBt.innerText = "Таблица лидеров";
+  resultsBt.onmousedown = function showResults() {
+    let result = "Нечего показывать";
+    if (bestResults() !== null) {
+      let arr = bestResults();
+      console.log(arr);
+      result = "";
+      for (let i = 0; i < arr.length; i++) {
+        result += `${i + 1} - место игрок ${arr[i].name} за ${
+          arr[i].moves
+        } ходов \n`;
+      }
+    }
+    confirm(result);
+  };
   buttonBar.appendChild(resultsBt);
   let m = document.getElementById("main");
   m.innerHTML = "";
   let movesLbl = document.createElement("label");
-  movesLbl.id = "movesLbl";
   movesLbl.innerText = `Ходов: ${movesCounter()}`;
+  movesLbl.id = "movesLbl";
   let timeLbl = document.createElement("label");
-  timeLbl.id = "timeLbl";
   timeLbl.innerText = `Время: 0:0`;
+  timeLbl.id = "timeLbl";
   let labelBar = document.createElement("div");
-  labelBar.id = "labelBar";
   labelBar.classList.add("row");
   labelBar.classList.add("labels");
   let currentFieldRow = document.createElement("div");
-  currentFieldRow.id = "currentFieldRow";
   currentFieldRow.classList.add("row");
   currentFieldRow.classList.add("labels");
   let currentFieldDim = document.createElement("label");
   currentFieldDim.innerText = `Размер поля: ${Math.sqrt(n)}х${Math.sqrt(n)}`;
-  currentFieldRow.id = "currentFieldRow";
   currentFieldRow.appendChild(currentFieldDim);
   let dimBar = document.createElement("div");
-  dimBar.id = "dimBar";
   dimBar.classList.add("row");
   dimBar.classList.add("labels");
   let dimensions = document.createElement("label");
-  dimensions.id = "dimensions";
   dimensions.innerText = "Другие размеры: ";
   dimBar.appendChild(dimensions);
   let x3 = document.createElement("a");
-  x3.id = "x3";
   x3.onmousedown = function threeBLocks() {
     renderBoard(0, 3);
     getAndSetTime(true);
@@ -306,7 +322,6 @@ function renderBoard(num, dim, end) {
   x3.innerText = " 3x3 ";
   dimBar.appendChild(x3);
   let x4 = document.createElement("a");
-  x4.id = " x4 ";
   x4.onmousedown = function threeBLocks() {
     renderBoard(0, 4);
     getAndSetTime(true);
@@ -367,10 +382,7 @@ function renderBoard(num, dim, end) {
         return -1;
       }
     });
-  } /*else if (Array.isArray(JSON.parse(readAndSaveResults().savedGame))) {
-    numbers = JSON.parse(readAndSaveResults().savedGame)
-  } */
-  else {
+  } else {
     numbers = num;
   }
   const main = document.getElementById("main");
@@ -432,7 +444,6 @@ function renderBoard(num, dim, end) {
             isItOver = false;
           }
         }
-
         renderBoard(numbers, Math.sqrt(n), isItOver);
       }
     };
