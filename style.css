@@ -13,6 +13,7 @@
   width: 315px;
   margin-left: auto;
   margin-right: auto;
+  user-select: none;
 }
 
 .box {
