@@ -1,8 +1,8 @@
 .button {
-height: 40px ;
-border-radius: 4px;
-margin-left: 20px;
-margin-right: 20px;
+  height: 40px;
+  border-radius: 4px;
+  margin-left: 20px;
+  margin-right: 20px;
 }
 
 .row {
@@ -42,8 +42,22 @@ a {
   cursor: default;
 }
 
+.animation {
+  animation-duration: 0.4s;
+  animation-name: colored;
+}
 
-
-.highlight {
-  background-color: brown;
+@keyframes colored {
+  0% {
+    background-color: red;
+  }
+  25% {
+    background-color: yellow;
+  }
+  50% {
+    background-color: blue;
+  }
+  100% {
+    background-color: green;
+  }
 }

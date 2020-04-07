@@ -9,11 +9,34 @@ function getAndSetTime(reset, save) {
     localStorage.setItem("time", Date.now());
     time = localStorage.getItem("time");
   }
-  if (typeof save === "number") {
+  if (typeof save !== "undefined") {
+    console.log(save)
     localStorage.setItem("time", save);
     time = localStorage.getItem("time");
   }
   return time;
+}
+
+function bestResults(name) {
+  if (typeof name === 'string') {
+    let fromBase = [];
+    if (localStorage.getItem("results") !== undefined) {
+      fromBase = JSON.parse(localStorage.getItem("results"));
+      fromBase.push({moves: movesCounter(), name});
+      fromBase.map((a, b) => {
+        if (a.moves > b.moves) {
+          return 1;
+        }
+        if (a.moves < b.moves) {
+          return - 1;
+        }
+      });
+      fromBase.length = 10;
+    } else {
+      localStorage.setItem("results", JSON.stringify({moves: movesCounter(), name}));
+    }
+  }
+  return localStorage.getItem("results");
 }
 
 function playPause(toggle) {
@@ -26,7 +49,7 @@ function playPause(toggle) {
       state = true;
       break;
     default:
-      state = true;
+      state = false;
       break;
   }
   if (toggle) {
@@ -37,14 +60,67 @@ function playPause(toggle) {
   return state;
 }
 
-function readAndSaveReults(read, save) {
-  let best = localStorage.getItem("best", "");
+function saveRestore (toggle) {
+  let gotSome = localStorage.getItem("gotSome");
+  switch (gotSome) {
+    case "false":
+      gotSome = false;
+      break;
+    case "true":
+      gotSome = true;
+      break;
+    default:
+      gotSome = false;
+      break;
+  }
+  if (toggle) {
+    localStorage.setItem("gotSome", !gotSome);
+    return !gotSome;
+  }
+  localStorage.setItem("gotSome", gotSome);
+  return gotSome;
+}
+
+function saveDimenson(dim) {
+  if (typeof dim === 'number') {
+    localStorage.setItem("dimension", dim);
+  }
+  return localStorage.getItem("dimension");
+}
+
+function saveTime(time) {
+  if (typeof time === 'number') {
+    localStorage.setItem("savedTime", time);
+  }
+  return localStorage.getItem("savedTime");
+}
+
+function saveMoves(moves) {
+  if (typeof moves === 'number') {
+    localStorage.setItem("movesBeenMade", moves);
+  }
+  return localStorage.getItem("movesBeenMade");
+}
+
+function readAndSaveResults(save, dimension, timePassed, movesBeenMade) {
+  let savedGame;
+  if (Array.isArray(save)) {
+    localStorage.setItem("savedGame", JSON.stringify(save));
+    saveDimenson(dimension);
+    saveTime(timePassed)
+    saveMoves(movesBeenMade);
+  }
+  let dim = saveDimenson();
+  savedGame = localStorage.getItem("savedGame");
+  let time = saveTime();
+  let moves = saveMoves();
+  return {savedGame, time, dim, moves};
 }
 
 function showTime() {
   if (playPause()) {
     let now = Date.now();
-    let timeStart = getAndSetTime();
+    let timeStart = +getAndSetTime();
     let s = Math.round((now - timeStart) / 1000);
     let m = Math.floor(s / 60);
     s = s % 60;
@@ -58,7 +134,7 @@ function showTime() {
 
 showTime();
 
-function movesCounter(plusOne, reset) {
+function movesCounter(plusOne, reset, setMoves) {
   let moves = +localStorage.getItem("moves");
   if (reset || localStorage.getItem("moves") === undefined) {
     localStorage.setItem("moves", 0);
@@ -68,11 +144,27 @@ function movesCounter(plusOne, reset) {
     moves += 1;
     localStorage.setItem("moves", `${moves}`);
   }
+  if (typeof setMoves === 'number') {
+    localStorage.setItem("moves", setMoves);
+    moves = +localStorage.getItem("moves");
+  }
   return moves;
+}
+
+function animate(id) {
+  setTimeout(() => {
+    const key = document.getElementById(id);
+    key.classList.add('animation');
+  }, 0);
+  setTimeout(() => {
+    const key = document.getElementById(id);
+    key.classList.remove('animation');
+  }, 100);
 }
 
 function renderBoard(num, dim, end) {
   if (end) {
+    let playerName = prompt('Как тебя зовут?', 'Неизвестный');
   }
   let n = 16;
   if (typeof dim === "number") {
@@ -82,8 +174,6 @@ function renderBoard(num, dim, end) {
   for (let i = 1; i <= n; i++) {
     solved.push(i);
   }
-  getAndSetTime();
-  movesCounter();
   let ScWidth = window.screen.width;
   let ScHeight = window.screen.height;
   let styleSh = document.styleSheets;
@@ -126,7 +216,7 @@ function renderBoard(num, dim, end) {
   newGameBt.classList.add("button");
   newGameBt.innerText = "New Game";
   newGameBt.onmousedown = function newGame() {
-    renderBoard();
+    renderBoard(false, Math.sqrt(n));
     getAndSetTime(true);
     movesCounter(false, true);
     if (!playPause()) {
@@ -156,9 +246,22 @@ function renderBoard(num, dim, end) {
   saveBt.id = "saveBt";
   saveBt.classList.add("button");
   saveBt.onmousedown = function save() {
-    readAndSaveReults(false, numbers);
+    if (saveRestore()) {
+      getAndSetTime();
+      readAndSaveResults(numbers, Math.sqrt(n), (+Date.now() - +getAndSetTime()), movesCounter());
+      saveRestore(true);
+      saveBt.innerText = "Continue";
+    } else {
+      saveRestore(true);
+      console.log(+readAndSaveResults().time)
+      getAndSetTime(false, +readAndSaveResults().time);
+
+      movesCounter(false, false, +readAndSaveResults().moves);
+      renderBoard(JSON.parse(readAndSaveResults().savedGame), +readAndSaveResults().dim);
+      saveBt.innerText ="Save Results";
+    }
   };
-  saveBt.innerText = "Save Results";
+  saveBt.innerText = saveRestore() ? "Save Results" : "Continue";
   buttonBar.appendChild(saveBt);
   let resultsBt = document.createElement("button");
   resultsBt.id = "resultsBt";
@@ -264,9 +367,9 @@ function renderBoard(num, dim, end) {
         return -1;
       }
     });
-  } else if (readAndSaveReults()) {
-    
-  }
+  } /*else if (Array.isArray(JSON.parse(readAndSaveResults().savedGame))) {
+    numbers = JSON.parse(readAndSaveResults().savedGame)
+  } */
   else {
     numbers = num;
   }
@@ -302,6 +405,8 @@ function renderBoard(num, dim, end) {
         }
         let empty = document.createElement("div");
         let parentEl = el.parentElement;
+        animate(zero.id);
+        animate(el.id);
         let parentZero = zero.parentElement;
         parentZero.replaceChild(empty, zero);
         let temp = parentEl.replaceChild(zero, el);
